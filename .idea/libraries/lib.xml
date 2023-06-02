@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/lib/jcardsim" />
+      <root url="file://$PROJECT_DIR$/lib/jc221/lib" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/lib/jc221/lib" recursive="false" />
+    <jarDirectory url="file://$PROJECT_DIR$/lib/jcardsim" recursive="false" />
+  </library>
+</component>
