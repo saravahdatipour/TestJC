@@ -1,5 +1,5 @@
 // converted by version 1.3
-// on Fri Jun 02 10:51:57 EDT 2023
+// on Mon Jun 05 10:24:04 EDT 2023
 
 .package test {
 	.aid 0xA0:0x40:0x41:0x42:0x43:0x44:0x45:0x46:0x10;
@@ -41,7 +41,7 @@
 	.class public test 0 extends 0.3 {		// extends javacard/framework/Applet
 
 		.fields {
-			private static final byte HELLOMSG = 1;		// B
+			private static final byte HELLOMSG = 0;		// B
 		}
 
 		.publicMethodTable 7 {
@@ -106,7 +106,7 @@
 					ifeq L2;
 				L1:	return;
 				L2:	sload_3;
-					slookupswitch L4 1 1 L3;
+					slookupswitch L4 1 0 L3;
 				L3:	aload_1;
 					invokestatic 6;		// test/test.replyHELLOMSG(Ljavacard/framework/APDU;)V
 					goto L5;

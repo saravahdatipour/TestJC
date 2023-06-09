@@ -7,7 +7,7 @@ import javacard.framework.*;
  */
 public class test extends Applet implements ISO7816 {
 
-    private final static byte HELLOMSG = (byte) 1; // TEST MESSAGE 1
+    private final static byte HELLOMSG = (byte) 0; // TEST MESSAGE 1
 
     protected test() {
         register();
@@ -57,13 +57,6 @@ public class test extends Applet implements ISO7816 {
         apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (short) responseData.length);
 
 
-
-//        byte ins = buffer[OFFSET_INS];
-//        short le = -1;
-//        le =apdu.setOutgoing();
-//        byte bytetosend = 2;
-//        apdu.setOutgoingLength((short) 5);
-//        apdu.sendBytes((short) 2, (short)5);
 
     }//end replyHELLOMSG
 }//end applet
