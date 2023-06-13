@@ -3,6 +3,7 @@
     <CLASSES>
       <root url="file://$PROJECT_DIR$/lib/jcardsim" />
       <root url="file://$PROJECT_DIR$/lib/jc221/lib" />
+      <root url="jar://$PROJECT_DIR$/lib/BouncyCastle/bcprov-jdk15to18-174.jar!/org/bouncycastle" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

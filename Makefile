@@ -36,10 +36,11 @@ runpersonalizationterminal:
 keyutils: out/terminal/keyutils.class
 
 out/terminal/keyutils.class: src/KeyUtils/KeyUtils.java
-	javac -d out -cp ${JC_HOME}:util/jcardsim/${JCARDSIM}.jar:out src/KeyUtils/KeyUtils.java
+
+	javac -d out -cp ${JC_HOME}:util/jcardsim/${JCARDSIM}.jar:/home/sara/Desktop/TestJC/lib/BouncyCastle/bcprov-jdk15to18-174.jar:out src/KeyUtils/KeyUtils.java
 
 runkeyutils:
-	java -cp util/jcardsim/${JCARDSIM}.jar:out KeyUtils.KeyUtils
+	java -cp util/jcardsim/${JCARDSIM}.jar:/home/sara/Desktop/TestJC/lib/BouncyCastle/bcprov-jdk15to18-174.jar:out KeyUtils.KeyUtils
 
 clean:
 	rm -rfv out/*

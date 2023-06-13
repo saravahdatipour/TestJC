@@ -6,6 +6,7 @@
       <root url="jar://$PROJECT_DIR$/lib/Egate/lib/api.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/Egate/lib/makeijc.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/Egate/lib/captransf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/BouncyCastle/bcprov-jdk15to18-174.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
