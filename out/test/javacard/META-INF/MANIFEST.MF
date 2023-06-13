@@ -2,17 +2,19 @@ Manifest-Version: 1.0
 Created-By: 1.8.0_202 (Oracle Corporation)
 
 Name: test
-Java-Card-Imported-Package-1-Version: 1.2
-Java-Card-Package-Version: 1.0
 Java-Card-CAP-File-Version: 2.1
-Java-Card-Converter-Version: 1.3
 Java-Card-Package-AID: 0xa0:0x40:0x41:0x42:0x43:0x44:0x45:0x46:0x10
 Java-Card-Integer-Support-Required: FALSE
-Java-Card-Applet-1-Name: test
-Java-Card-CAP-Creation-Time: Tue Jun 13 06:49:18 EDT 2023
-Java-Card-Package-Name: test
+Java-Card-CAP-Creation-Time: Tue Jun 13 14:37:48 EDT 2023
+Java-Card-Imported-Package-2-AID: 0xa0:0x00:0x00:0x00:0x62:0x01:0x02
 Java-Card-Converter-Provider: Sun Microsystems Inc.
+Java-Card-Imported-Package-2-Version: 1.2
 Java-Card-Applet-1-AID: 0xa0:0x40:0x41:0x42:0x43:0x44:0x45:0x46:0x10:0
  x01
+Java-Card-Imported-Package-1-Version: 1.2
+Java-Card-Package-Version: 1.0
+Java-Card-Converter-Version: 1.3
+Java-Card-Applet-1-Name: test
+Java-Card-Package-Name: test
 Java-Card-Imported-Package-1-AID: 0xa0:0x00:0x00:0x00:0x62:0x01:0x01
 

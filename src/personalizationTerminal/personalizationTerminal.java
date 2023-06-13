@@ -23,6 +23,7 @@ import static KeyUtils.KeyUtils.loadPublicKeyFromFile;
 public class personalizationTerminal {
     //    =================================== Global vars for instruction bytes to send to the card =====================================
     private final static byte HELLOMSG= (byte) 0; // tell card to generate and send public key
+    private final static byte GETMASTER = (byte) 5; // TEST MESSAGE 1
 
     private final static byte PersonalizationTerminal_MSG1 = (byte) 1; // tell card to generate and send public key
     private final static byte PersonalizationTerminal_MSG2 = (byte) 2; // send signed public key (cert), Master public key, ID of user
@@ -155,33 +156,32 @@ public class personalizationTerminal {
         ECPoint W = publicKey.getW();
         BigInteger Wx = W.getAffineX();
         BigInteger Wy = W.getAffineY();
+        byte[] Wxba = toUnsignedByteArray(Wx);
+        byte[] Wyba = toUnsignedByteArray(Wy);
+
+// Handle the case when Wxba and Wyba are less than 24 bytes
+        Wxba = Arrays.copyOf(Wxba, 24);
+        Wyba = Arrays.copyOf(Wyba, 24);
+
+        byte[] Wtosend = new byte[1 + Wxba.length + Wyba.length];
+
+// First, add the 0x04 byte
+        Wtosend[0] = (byte) 4;
+
+// Copy Wxba into combined, starting after 0x04
+        System.arraycopy(Wxba, 0, Wtosend, 1, Wxba.length);
+
+// Copy Wyba into combined, starting after Wxba
+        System.arraycopy(Wyba, 0, Wtosend, 1 + Wxba.length, Wyba.length);
+
+        System.out.println("W: " + toHexString(Wtosend));
+        System.out.println("W length: " + (Wtosend.length));
+
         //-------------------------------------------
         // Create APDU command
-// ...
-        int totallength = (4 + 2 + toUnsignedByteArray(a, keySize / 8).length + toUnsignedByteArray(b, keySize / 8).length+
-                toUnsignedByteArray(p, keySize / 8).length +toUnsignedByteArray(n, keySize / 8).length + toUnsignedByteArray(Gx, keySize / 8).length
-        + toUnsignedByteArray(Gy, keySize / 8).length + 1 + toUnsignedByteArray(Wx, keySize / 8).length + toUnsignedByteArray(Wy, keySize / 8).length);
-        byte[] apduBytes = ByteBuffer.allocate(totallength)
-                .put((byte) 0x00)  // CLA
-                .put((byte) 0x22)  // INS
-                .putShort((short) keySize)
-                .put(toUnsignedByteArray(a, keySize / 8))
-                .put(toUnsignedByteArray(b, keySize / 8))
-                .put(toUnsignedByteArray(p, keySize / 8))
-                .put(toUnsignedByteArray(n, keySize / 8))
-                .put(toUnsignedByteArray(Gx, keySize / 8))
-                .put(toUnsignedByteArray(Gy, keySize / 8))
-                .put((byte) 0x04)  // Indicate that G and W are uncompressed
-                .put(toUnsignedByteArray(Wx, keySize / 8))
-                .put(toUnsignedByteArray(Wy, keySize / 8))
-                .put((byte) h)
-                .array();
-        System.out.println("this is the length of the buffer: " + totallength);
-// Now you can use apduBytes to create CommandAPDU:
-        CommandAPDU apdu = new CommandAPDU(0x00, PersonalizationTerminal_MSG2, 0, 0, apduBytes);
-        System.out.println("actual sent data is this long: " + apdu.getData().length);
+        CommandAPDU apdu = new CommandAPDU(0,GETMASTER,0,0,Wtosend);
 
-        System.out.println(toUnsignedByteArray(Wy, keySize / 8).length);
+
 
         // =================== SIGN card public key with (master) ===========================
 
@@ -192,9 +192,12 @@ public class personalizationTerminal {
         try {
             ResponseAPDU response = applet.transmit(apdu);
 //        System.out.println(response.getSW()); //should be 36864, in hex would be 9000 -> successful status code
-            short card_id = 137; //generate this from a file
             byte[] responsedata = response.getData();
             System.out.println("Raw content of the command: " + toHexString(apdu.getBytes()));
+            System.out.println("Received Data From Applet in Array: " + Arrays.toString(responsedata));
+            System.out.println("Raw content of the response: " + toHexString(response.getBytes()));
+
+
             return null;
         }
         catch (CardException e){
@@ -217,26 +220,6 @@ public class personalizationTerminal {
         personalization_terminal.sendPersonalizationMSG2();
         System.out.println("Card inserted applet selected");
 
-        ECPublicKey publicKey = loadPublicKeyFromFile("public.key");
-        ECParameterSpec ecParameterSpec = publicKey.getParams();
-        EllipticCurve curve = ecParameterSpec.getCurve();
-        ECFieldFp field = (ECFieldFp) curve.getField();
-        BigInteger p = field.getP();
-
-//        // Print out the parameters and public key coordinates
-//        System.out.println("Curve: " +
-//                "a=" + curve.getA() + //need to send 256 bits 32 byte
-//                ", b=" + curve.getB()); //need to send 256 bits
-//        System.out.println("Field size: " + field.getFieldSize());
-//        System.out.println("Prime field: " + p); //need to send 256 bits
-//        System.out.println("Generator (G): " +  //need to send
-//                "x=" + ecParameterSpec.getGenerator().getAffineX() + //255 bits
-//                ", y=" + ecParameterSpec.getGenerator().getAffineY());//255 bits
-//        System.out.println("Order (n): " + ecParameterSpec.getOrder()); //need to send 255
-//        System.out.println("Cofactor (h): " + ecParameterSpec.getCofactor()); // 1 byte
-//        System.out.println("Public Key Coordinates:");
-//        System.out.println("public key x coordinate: " + publicKey.getW().getAffineX()); //need to send 256
-//        System.out.println("public key y coordinate: " + publicKey.getW().getAffineY()); //need to send 256?
 
 
 
@@ -262,6 +245,16 @@ public class personalizationTerminal {
             byte[] result = new byte[size];
             System.arraycopy(bytes, 0, result, size - bytes.length, bytes.length);
             return result;
+        }
+    }
+    public static byte[] toUnsignedByteArray(BigInteger value) {
+        byte[] originalByteArray = value.toByteArray();
+        if (originalByteArray[0] == 0) {
+            byte[] unsignedByteArray = new byte[originalByteArray.length - 1];
+            System.arraycopy(originalByteArray, 1, unsignedByteArray, 0, unsignedByteArray.length);
+            return unsignedByteArray;
+        } else {
+            return originalByteArray;
         }
     }
 

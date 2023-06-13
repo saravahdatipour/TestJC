@@ -31,7 +31,7 @@ out/terminal/personalizationTerminal.class: src/personalizationTerminal/personal
 	javac -d out -cp ${JC_HOME}:util/jcardsim/${JCARDSIM}.jar:out src/personalizationTerminal/personalizationTerminal.java
 
 runpersonalizationterminal:
-	java -cp util/jcardsim/${JCARDSIM}.jar:out personalizationTerminal.personalizationTerminal
+	java -cp util/jcardsim/${JCARDSIM}.jar:/home/sara/Desktop/TestJC/lib/BouncyCastle/bcprov-jdk15to18-174.jar:out personalizationTerminal.personalizationTerminal
 
 keyutils: out/terminal/keyutils.class
 

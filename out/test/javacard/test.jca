@@ -1,5 +1,5 @@
 // converted by version 1.3
-// on Tue Jun 13 06:49:17 EDT 2023
+// on Tue Jun 13 14:37:48 EDT 2023
 
 .package test {
 	.aid 0xA0:0x40:0x41:0x42:0x43:0x44:0x45:0x46:0x10;
@@ -7,6 +7,7 @@
 
 	.imports {
 		0xA0:0x0:0x0:0x0:0x62:0x1:0x1 1.2;		//javacard/framework
+		0xA0:0x0:0x0:0x0:0x62:0x1:0x2 1.2;		//javacard/security
 	}
 
 	.applet {
@@ -31,17 +32,50 @@
 			.descriptor	Ljavacard/framework/APDU;	0.10;
 
 		// 7
-		staticMethodRef 0.7.1(S)V;		// javacard/framework/ISOException.throwIt(S)V
+		staticMethodRef test/receiveMaster(Ljavacard/framework/APDU;)V;
+			.descriptor	Ljavacard/framework/APDU;	0.10;
+
 		// 8
-		staticMethodRef 0.16.2([BS[BSS)S;		// javacard/framework/Util.arrayCopyNonAtomic([BS[BSS)S
+		staticMethodRef 0.7.1(S)V;		// javacard/framework/ISOException.throwIt(S)V
 		// 9
+		classRef 1.16;		// javacard/security/KeyPair
+		// 10
+		staticMethodRef 1.16.0(BS)V;		// javacard/security/KeyPair.<init>(BS)V
+		// 11
+		virtualMethodRef 1.16.1()V;		// javacard/security/KeyPair.genKeyPair()V
+		// 12
+		virtualMethodRef 1.16.3()Ljavacard/security/PublicKey;;		// javacard/security/KeyPair.getPublic()Ljavacard/security/PublicKey;
+			.descriptor	Ljavacard/security/PublicKey;	1.3;
+
+		// 13
+		classRef 1.19;		// javacard/security/ECPublicKey
+		// 14
 		virtualMethodRef 0.10.8(SS)V;		// javacard/framework/APDU.setOutgoingAndSend(SS)V
+		// 15
+		staticFieldRef byte[] test/prime;
+		// 16
+		staticFieldRef byte[] test/a;
+		// 17
+		staticFieldRef byte[] test/b;
+		// 18
+		staticFieldRef byte[] test/g;
+		// 19
+		staticFieldRef byte[] test/r;
+		// 20
+		staticFieldRef byte test/k;
 	}
 
 	.class public test 0 extends 0.3 {		// extends javacard/framework/Applet
 
 		.fields {
+			static byte[] prime = {-1,-1,-1,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-2,-1,-1,-1,-1,-1,-1,-1,-1};		// [B
+			static byte[] a = {-1,-1,-1,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-2,-1,-1,-4};		// [B
+			static byte[] b = {33,-23,-50,24,33,-106,-43,10,-112,-31,-102,57,59,75,103,8,96,-39,24,43,33,0,-44,-81};		// [B
+			static byte[] g = {4,24,-115,-88,14,-80,48,-112,-10,124,-65,32,-21,67,-95,-120,0,-12,-1,10,-3,-126,-1,16,18,7,25,43,-107,-1,-56,-38,120,99,16,17,-19,107,36,-51,-43,115,-7,119,-95,30,121,72,17,-97,68,-123,19,13,36,45,92,-72,47,-8,41,92,20,20,-108,125,19,-45,-98,54,-55,84,32};		// [B
+			static byte[] r = {-1,-1,-1,-103,-17,-116,-95,97,16,63,62,99,122,38,94,-1,-1,-1,-1,-1,-1,-1,-1,-1};		// [B
+			static byte k = 1;		// B
 			private static final byte HELLOMSG = 0;		// B
+			private static final byte GETMASTER = 5;		// B
 		}
 
 		.publicMethodTable 7 {
@@ -106,24 +140,44 @@
 					ifeq L2;
 				L1:	return;
 				L2:	sload_3;
-					slookupswitch L4 1 0 L3;
+					slookupswitch L5 2 0 L3 5 L4;
 				L3:	aload_1;
 					invokestatic 6;		// test/test.replyHELLOMSG(Ljavacard/framework/APDU;)V
-					goto L5;
-				L4:	sspush 137;
-					invokestatic 7;		// javacard/framework/ISOException.throwIt(S)V
-				L5:	return;
+					goto L6;
+				L4:	aload_1;
+					invokestatic 7;		// test/test.receiveMaster(Ljavacard/framework/APDU;)V
+					goto L6;
+				L5:	sspush 137;
+					invokestatic 8;		// javacard/framework/ISOException.throwIt(S)V
+				L6:	return;
 		}
 
 		.method public static replyHELLOMSG(Ljavacard/framework/APDU;)V 2 {
-			.stack 5;
-			.locals 2;
+			.stack 4;
+			.locals 5;
 
 			.descriptor	Ljavacard/framework/APDU;	0.10;
 
 				L0:	aload_0;
 					invokevirtual 4;		// javacard/framework/APDU.getBuffer()[B
 					astore_1;
+					new 9;		// javacard/security/KeyPair
+					dup;
+					sconst_5;
+					sspush 192;
+					invokespecial 10;		// javacard/security/KeyPair.<init>(BS)V
+					astore_2;
+					aload_2;
+					invokevirtual 11;		// javacard/security/KeyPair.genKeyPair()V
+					aload_2;
+					invokevirtual 12;		// javacard/security/KeyPair.getPublic()Ljavacard/security/PublicKey;
+					checkcast 0 13;		// T_CLASSORINTERFACE javacard/security/ECPublicKey
+					astore_3;
+					aload_3;
+					aload_1;
+					sconst_5;
+					invokeinterface 3 13 19;		// javacard/security/ECPublicKey
+					sstore 4;
 					sconst_3;
 					newarray 11;
 					dup;
@@ -138,20 +192,113 @@
 					sconst_2;
 					bspush 87;
 					bastore;
-					astore_2;
-					aload_2;
-					sconst_0;
-					aload_1;
-					sconst_5;
-					aload_2;
-					arraylength;
-					invokestatic 8;		// javacard/framework/Util.arrayCopyNonAtomic([BS[BSS)S
-					pop;
+					astore 5;
 					aload_0;
 					sconst_5;
+					sload 4;
+					invokevirtual 14;		// javacard/framework/APDU.setOutgoingAndSend(SS)V
+					return;
+		}
+
+		.method public static sendPublicKey(Ljavacard/framework/APDU;)V 3 {
+			.stack 4;
+			.locals 4;
+
+			.descriptor	Ljavacard/framework/APDU;	0.10;
+
+				L0:	aload_0;
+					invokevirtual 4;		// javacard/framework/APDU.getBuffer()[B
+					astore_1;
+					new 9;		// javacard/security/KeyPair
+					dup;
+					sconst_5;
+					sspush 192;
+					invokespecial 10;		// javacard/security/KeyPair.<init>(BS)V
+					astore_2;
 					aload_2;
+					invokevirtual 11;		// javacard/security/KeyPair.genKeyPair()V
+					aload_2;
+					invokevirtual 12;		// javacard/security/KeyPair.getPublic()Ljavacard/security/PublicKey;
+					checkcast 0 13;		// T_CLASSORINTERFACE javacard/security/ECPublicKey
+					astore_3;
+					aload_3;
+					aload_1;
+					sconst_5;
+					invokeinterface 3 13 19;		// javacard/security/ECPublicKey
+					sstore 4;
+					aload_0;
+					sconst_5;
+					sload 4;
+					invokevirtual 14;		// javacard/framework/APDU.setOutgoingAndSend(SS)V
+					return;
+		}
+
+		.method public static receiveMaster(Ljavacard/framework/APDU;)V 4 {
+			.stack 4;
+			.locals 4;
+
+			.descriptor	Ljavacard/framework/APDU;	0.10;
+
+				L0:	aload_0;
+					invokevirtual 4;		// javacard/framework/APDU.getBuffer()[B
+					astore_1;
+					new 9;		// javacard/security/KeyPair
+					dup;
+					sconst_5;
+					sspush 192;
+					invokespecial 10;		// javacard/security/KeyPair.<init>(BS)V
+					astore_2;
+					aload_2;
+					invokevirtual 12;		// javacard/security/KeyPair.getPublic()Ljavacard/security/PublicKey;
+					checkcast 0 13;		// T_CLASSORINTERFACE javacard/security/ECPublicKey
+					astore_3;
+					aload_3;
+					getstatic_a 15;		// reference test/test.prime
+					sconst_0;
+					getstatic_a 15;		// reference test/test.prime
 					arraylength;
-					invokevirtual 9;		// javacard/framework/APDU.setOutgoingAndSend(SS)V
+					invokeinterface 4 13 4;		// javacard/security/ECPublicKey
+					aload_3;
+					getstatic_a 16;		// reference test/test.a
+					sconst_0;
+					getstatic_a 16;		// reference test/test.a
+					arraylength;
+					invokeinterface 4 13 7;		// javacard/security/ECPublicKey
+					aload_3;
+					getstatic_a 17;		// reference test/test.b
+					sconst_0;
+					getstatic_a 17;		// reference test/test.b
+					arraylength;
+					invokeinterface 4 13 8;		// javacard/security/ECPublicKey
+					aload_3;
+					getstatic_a 18;		// reference test/test.g
+					sconst_0;
+					getstatic_a 18;		// reference test/test.g
+					arraylength;
+					invokeinterface 4 13 9;		// javacard/security/ECPublicKey
+					aload_3;
+					getstatic_a 19;		// reference test/test.r
+					sconst_0;
+					getstatic_a 19;		// reference test/test.r
+					arraylength;
+					invokeinterface 4 13 10;		// javacard/security/ECPublicKey
+					aload_3;
+					getstatic_b 20;		// byte test/test.k
+					invokeinterface 2 13 11;		// javacard/security/ECPublicKey
+					aload_3;
+					aload_1;
+					sconst_5;
+					bspush 49;
+					invokeinterface 4 13 18;		// javacard/security/ECPublicKey
+					aload_3;
+					aload_1;
+					sconst_5;
+					invokeinterface 3 13 19;		// javacard/security/ECPublicKey
+					sstore 4;
+					aload_0;
+					sconst_5;
+					sload 4;
+					invokevirtual 14;		// javacard/framework/APDU.setOutgoingAndSend(SS)V
 					return;
 		}
 
