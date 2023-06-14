@@ -1,5 +1,5 @@
 // converted by version 1.3
-// on Tue Jun 13 14:37:48 EDT 2023
+// on Wed Jun 14 15:05:04 EDT 2023
 
 .package test {
 	.aid 0xA0:0x40:0x41:0x42:0x43:0x44:0x45:0x46:0x10;
@@ -32,7 +32,7 @@
 			.descriptor	Ljavacard/framework/APDU;	0.10;
 
 		// 7
-		staticMethodRef test/receiveMaster(Ljavacard/framework/APDU;)V;
+		virtualMethodRef test/loadKeysAndVerify(Ljavacard/framework/APDU;)V;
 			.descriptor	Ljavacard/framework/APDU;	0.10;
 
 		// 8
@@ -52,28 +52,43 @@
 		// 14
 		virtualMethodRef 0.10.8(SS)V;		// javacard/framework/APDU.setOutgoingAndSend(SS)V
 		// 15
-		staticFieldRef byte[] test/prime;
+		virtualMethodRef 0.10.6()S;		// javacard/framework/APDU.setIncomingAndReceive()S
 		// 16
-		staticFieldRef byte[] test/a;
+		virtualMethodRef 1.16.2()Ljavacard/security/PrivateKey;;		// javacard/security/KeyPair.getPrivate()Ljavacard/security/PrivateKey;
+			.descriptor	Ljavacard/security/PrivateKey;	1.2;
+
 		// 17
-		staticFieldRef byte[] test/b;
+		classRef 1.18;		// javacard/security/ECPrivateKey
 		// 18
-		staticFieldRef byte[] test/g;
+		staticMethodRef 1.15.0(BZ)Ljavacard/security/Signature;;		// javacard/security/Signature.getInstance(BZ)Ljavacard/security/Signature;
+			.descriptor	Ljavacard/security/Signature;	1.15;
+
 		// 19
-		staticFieldRef byte[] test/r;
+		virtualMethodRef 1.15.3(Ljavacard/security/Key;B)V;		// javacard/security/Signature.init(Ljavacard/security/Key;B)V
+			.descriptor	Ljavacard/security/Key;	1.0;
+
 		// 20
-		staticFieldRef byte test/k;
+		virtualMethodRef 1.15.5([BSS[BS)S;		// javacard/security/Signature.sign([BSS[BS)S
+		// 21
+		virtualMethodRef 1.15.7([BSS[BSS)Z;		// javacard/security/Signature.verify([BSS[BSS)Z
+		// 22
+		staticMethodRef 1.13.0(BSZ)Ljavacard/security/Key;;		// javacard/security/KeyBuilder.buildKey(BSZ)Ljavacard/security/Key;
+			.descriptor	Ljavacard/security/Key;	1.0;
+
+		// 23
+		staticFieldRef byte[] test/publickeybytes;
+		// 24
+		staticFieldRef byte[] test/privatekeybytes;
+		// 25
+		staticFieldRef byte[] test/signaturebytes;
 	}
 
 	.class public test 0 extends 0.3 {		// extends javacard/framework/Applet
 
 		.fields {
-			static byte[] prime = {-1,-1,-1,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-2,-1,-1,-1,-1,-1,-1,-1,-1};		// [B
-			static byte[] a = {-1,-1,-1,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-2,-1,-1,-4};		// [B
-			static byte[] b = {33,-23,-50,24,33,-106,-43,10,-112,-31,-102,57,59,75,103,8,96,-39,24,43,33,0,-44,-81};		// [B
-			static byte[] g = {4,24,-115,-88,14,-80,48,-112,-10,124,-65,32,-21,67,-95,-120,0,-12,-1,10,-3,-126,-1,16,18,7,25,43,-107,-1,-56,-38,120,99,16,17,-19,107,36,-51,-43,115,-7,119,-95,30,121,72,17,-97,68,-123,19,13,36,45,92,-72,47,-8,41,92,20,20,-108,125,19,-45,-98,54,-55,84,32};		// [B
-			static byte[] r = {-1,-1,-1,-103,-17,-116,-95,97,16,63,62,99,122,38,94,-1,-1,-1,-1,-1,-1,-1,-1,-1};		// [B
-			static byte k = 1;		// B
+			static final byte[] privatekeybytes = {-7,94,73,5,-89,34,-26,-67,-39,28,22,70,73,9,-71,-5,-54,-19,-80,4,-44,-127,-101,58};		// [B
+			static final byte[] publickeybytes = {4,-119,-90,20,20,-108,42,-77,82,56,-111,67,34,40,-110,-40,-36,70,22,-47,-43,78,34,89,77,32,-77,-27,-47,-53,-107,35,-82,72,-110,38,44,-41,-78,-127,71,-113,-94,77,1,-128,4,-21,-42};		// [B
+			static final byte[] signaturebytes = {48,53,2,24,95,96,-79,14,122,18,26,54,-7,-44,-15,-92,-110,-75,65,-111,62,69,47,53,74,97,23,37,2,25,0,-25,42,121,86,112,9,42,-119,15,123,106,-9,-78,103,-51,14,-102,-108,-41,56,-98,49,99,-113};		// [B
 			private static final byte HELLOMSG = 0;		// B
 			private static final byte GETMASTER = 5;		// B
 		}
@@ -87,6 +102,7 @@
 			getShareableInterfaceObject(Ljavacard/framework/AID;B)Ljavacard/framework/Shareable;;
 			select()Z;
 			process(Ljavacard/framework/APDU;)V;
+			loadKeysAndVerify(Ljavacard/framework/APDU;)V;
 		}
 
 		.packageMethodTable 0 {
@@ -144,8 +160,9 @@
 				L3:	aload_1;
 					invokestatic 6;		// test/test.replyHELLOMSG(Ljavacard/framework/APDU;)V
 					goto L6;
-				L4:	aload_1;
-					invokestatic 7;		// test/test.receiveMaster(Ljavacard/framework/APDU;)V
+				L4:	aload_0;
+					aload_1;
+					invokevirtual 7;		// test/test.loadKeysAndVerify(Ljavacard/framework/APDU;)V
 					goto L6;
 				L5:	sspush 137;
 					invokestatic 8;		// javacard/framework/ISOException.throwIt(S)V
@@ -234,70 +251,165 @@
 		}
 
 		.method public static receiveMaster(Ljavacard/framework/APDU;)V 4 {
-			.stack 4;
-			.locals 4;
+			.stack 7;
+			.locals 10;
 
 			.descriptor	Ljavacard/framework/APDU;	0.10;
 
 				L0:	aload_0;
 					invokevirtual 4;		// javacard/framework/APDU.getBuffer()[B
 					astore_1;
+					aload_0;
+					invokevirtual 15;		// javacard/framework/APDU.setIncomingAndReceive()S
+					sstore_2;
 					new 9;		// javacard/security/KeyPair
 					dup;
 					sconst_5;
 					sspush 192;
 					invokespecial 10;		// javacard/security/KeyPair.<init>(BS)V
-					astore_2;
-					aload_2;
-					invokevirtual 12;		// javacard/security/KeyPair.getPublic()Ljavacard/security/PublicKey;
-					checkcast 0 13;		// T_CLASSORINTERFACE javacard/security/ECPublicKey
 					astore_3;
 					aload_3;
-					getstatic_a 15;		// reference test/test.prime
+					invokevirtual 11;		// javacard/security/KeyPair.genKeyPair()V
+					aload_3;
+					invokevirtual 12;		// javacard/security/KeyPair.getPublic()Ljavacard/security/PublicKey;
+					checkcast 0 13;		// T_CLASSORINTERFACE javacard/security/ECPublicKey
+					astore 4;
+					aload_3;
+					invokevirtual 16;		// javacard/security/KeyPair.getPrivate()Ljavacard/security/PrivateKey;
+					checkcast 0 17;		// T_CLASSORINTERFACE javacard/security/ECPrivateKey
+					astore 5;
+					bspush 17;
 					sconst_0;
-					getstatic_a 15;		// reference test/test.prime
-					arraylength;
-					invokeinterface 4 13 4;		// javacard/security/ECPublicKey
-					aload_3;
-					getstatic_a 16;		// reference test/test.a
+					invokestatic 18;		// javacard/security/Signature.getInstance(BZ)Ljavacard/security/Signature;
+					astore 6;
+					aload 6;
+					aload 5;
+					sconst_1;
+					invokevirtual 19;		// javacard/security/Signature.init(Ljavacard/security/Key;B)V
+					sconst_1;
+					newarray 11;
+					dup;
 					sconst_0;
-					getstatic_a 16;		// reference test/test.a
-					arraylength;
-					invokeinterface 4 13 7;		// javacard/security/ECPublicKey
-					aload_3;
-					getstatic_a 17;		// reference test/test.b
-					sconst_0;
-					getstatic_a 17;		// reference test/test.b
-					arraylength;
-					invokeinterface 4 13 8;		// javacard/security/ECPublicKey
-					aload_3;
-					getstatic_a 18;		// reference test/test.g
-					sconst_0;
-					getstatic_a 18;		// reference test/test.g
-					arraylength;
-					invokeinterface 4 13 9;		// javacard/security/ECPublicKey
-					aload_3;
-					getstatic_a 19;		// reference test/test.r
-					sconst_0;
-					getstatic_a 19;		// reference test/test.r
-					arraylength;
-					invokeinterface 4 13 10;		// javacard/security/ECPublicKey
-					aload_3;
-					getstatic_b 20;		// byte test/test.k
-					invokeinterface 2 13 11;		// javacard/security/ECPublicKey
-					aload_3;
-					aload_1;
 					sconst_5;
-					bspush 49;
-					invokeinterface 4 13 18;		// javacard/security/ECPublicKey
-					aload_3;
-					aload_1;
+					bastore;
+					astore 7;
+					bspush 64;
+					newarray 11;
+					astore 8;
+					aload 6;
+					aload 7;
+					sconst_0;
+					sconst_1;
+					aload 8;
+					sconst_0;
+					invokevirtual 20;		// javacard/security/Signature.sign([BSS[BS)S
+					pop;
+					bspush 17;
+					sconst_0;
+					invokestatic 18;		// javacard/security/Signature.getInstance(BZ)Ljavacard/security/Signature;
+					astore 9;
+					aload 9;
+					aload 4;
+					sconst_2;
+					invokevirtual 19;		// javacard/security/Signature.init(Ljavacard/security/Key;B)V
+					aload 9;
+					aload 7;
+					sconst_0;
+					sconst_1;
+					aload 8;
+					sconst_0;
+					bspush 64;
+					invokevirtual 21;		// javacard/security/Signature.verify([BSS[BSS)Z
+					sstore 10;
+					sload 10;
+					ifne L2;
+				L1:	sspush 27010;
+					invokestatic 8;		// javacard/framework/ISOException.throwIt(S)V
+				L2:	aload_1;
 					sconst_5;
-					invokeinterface 3 13 19;		// javacard/security/ECPublicKey
-					sstore 4;
+					bspush -112;
+					bastore;
 					aload_0;
 					sconst_5;
-					sload 4;
+					sconst_1;
+					invokevirtual 14;		// javacard/framework/APDU.setOutgoingAndSend(SS)V
+					return;
+		}
+
+		.method public loadKeysAndVerify(Ljavacard/framework/APDU;)V 8 {
+			.stack 7;
+			.locals 6;
+
+			.descriptor	Ljavacard/framework/APDU;	0.10;
+
+				L0:	bspush 11;
+					sspush 192;
+					sconst_0;
+					invokestatic 22;		// javacard/security/KeyBuilder.buildKey(BSZ)Ljavacard/security/Key;
+					checkcast 0 13;		// T_CLASSORINTERFACE javacard/security/ECPublicKey
+					astore_2;
+					bspush 12;
+					sspush 192;
+					sconst_0;
+					invokestatic 22;		// javacard/security/KeyBuilder.buildKey(BSZ)Ljavacard/security/Key;
+					checkcast 0 17;		// T_CLASSORINTERFACE javacard/security/ECPrivateKey
+					astore_3;
+					aload_2;
+					getstatic_a 23;		// reference test/test.publickeybytes
+					sconst_0;
+					getstatic_a 23;		// reference test/test.publickeybytes
+					arraylength;
+					invokeinterface 4 13 18;		// javacard/security/ECPublicKey
+					aload_3;
+					getstatic_a 24;		// reference test/test.privatekeybytes
+					sconst_0;
+					getstatic_a 24;		// reference test/test.privatekeybytes
+					arraylength;
+					invokeinterface 4 17 18;		// javacard/security/ECPrivateKey
+					bspush 17;
+					sconst_0;
+					invokestatic 18;		// javacard/security/Signature.getInstance(BZ)Ljavacard/security/Signature;
+					astore 4;
+					aload 4;
+					aload_2;
+					sconst_2;
+					invokevirtual 19;		// javacard/security/Signature.init(Ljavacard/security/Key;B)V
+					sconst_1;
+					newarray 11;
+					dup;
+					sconst_0;
+					bspush 83;
+					bastore;
+					astore 5;
+					aload 4;
+					aload 5;
+					sconst_0;
+					aload 5;
+					arraylength;
+					getstatic_a 25;		// reference test/test.signaturebytes
+					sconst_0;
+					getstatic_a 25;		// reference test/test.signaturebytes
+					arraylength;
+					invokevirtual 21;		// javacard/security/Signature.verify([BSS[BSS)Z
+					sstore 6;
+					aload_1;
+					invokevirtual 4;		// javacard/framework/APDU.getBuffer()[B
+					astore 7;
+					sload 6;
+					ifne L2;
+				L1:	sspush 27010;
+					invokestatic 8;		// javacard/framework/ISOException.throwIt(S)V
+				L2:	aload 7;
+					sconst_0;
+					bspush 32;
+					bastore;
+					aload 7;
+					sconst_1;
+					sconst_1;
+					bastore;
+					aload_1;
+					sconst_0;
+					sconst_2;
 					invokevirtual 14;		// javacard/framework/APDU.setOutgoingAndSend(SS)V
 					return;
 		}

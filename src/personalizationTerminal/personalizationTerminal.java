@@ -1,5 +1,8 @@
 package personalizationTerminal;
 
+import com.licel.jcardsim.bouncycastle.asn1.ASN1Integer;
+import com.licel.jcardsim.bouncycastle.asn1.ASN1Sequence;
+//import javacard.security.Signature;
 import test.test; //import your javacard applet
 import com.licel.jcardsim.smartcardio.CardSimulator;
 import com.licel.jcardsim.smartcardio.CardTerminalSimulator;
@@ -11,6 +14,8 @@ import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.Signature;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.*;
@@ -153,12 +158,14 @@ public class personalizationTerminal {
         int h = ecParameterSpec.getCofactor();
         int keySize = n.bitLength();  // Get key size in bits
         // Get public key point W
+        BigInteger bigIntegerPrivateKey = privateKey.getS();
+        byte[] privateKeyBytes = bigIntegerPrivateKey.toByteArray();
+        System.out.println("Private key: " + toHexString(privateKeyBytes));
         ECPoint W = publicKey.getW();
         BigInteger Wx = W.getAffineX();
         BigInteger Wy = W.getAffineY();
         byte[] Wxba = toUnsignedByteArray(Wx);
         byte[] Wyba = toUnsignedByteArray(Wy);
-
 // Handle the case when Wxba and Wyba are less than 24 bytes
         Wxba = Arrays.copyOf(Wxba, 24);
         Wyba = Arrays.copyOf(Wyba, 24);
@@ -179,11 +186,56 @@ public class personalizationTerminal {
 
         //-------------------------------------------
         // Create APDU command
-        CommandAPDU apdu = new CommandAPDU(0,GETMASTER,0,0,Wtosend);
+//        CommandAPDU apdu = new CommandAPDU(0,GETMASTER,0,0,Wtosend);
 
 
 
         // =================== SIGN card public key with (master) ===========================
+        // Message to be signed
+        byte[] message = "S".getBytes();
+
+//        // Sign the message
+        Signature signature = Signature.getInstance("SHA1withECDSA", "BC");
+        signature.initSign(privateKey, new SecureRandom());
+        signature.update(message);
+        byte[] sigBytes = signature.sign();
+//
+//        signature.initVerify(publicKey);
+//        signature.update(message);
+//        boolean isVerified = signature.verify(sigBytes);
+//        System.out.println("Is verified: "+ isVerified);
+////// Extract r and s from the signature
+//        ASN1Sequence sequence = ASN1Sequence.getInstance(sigBytes);
+//        ASN1Integer r = (ASN1Integer) sequence.getObjectAt(0);
+//        ASN1Integer s = (ASN1Integer) sequence.getObjectAt(1);
+//        System.out.println("r: "+ toHexString(r.getEncoded()) + " s: " + toHexString(s.getEncoded()));
+
+//
+//// Ensure constant length by padding with leading zeros if necessary
+//        byte[] rBytes = r.getValue().toByteArray();
+//        byte[] sBytes = s.getValue().toByteArray();
+//        rBytes = Arrays.copyOf(rBytes, 24);  // 24 bytes (192 bits) for r
+//        sBytes = Arrays.copyOf(sBytes, 24);  // 24 bytes (192 bits) for s
+//
+//// Concatenate r and s to form the signature
+//        sigBytes = new byte[rBytes.length + sBytes.length];
+//        System.arraycopy(rBytes, 0, sigBytes, 0, rBytes.length);
+//        System.arraycopy(sBytes, 0, sigBytes, rBytes.length, sBytes.length);
+//
+//
+//
+//
+//
+        System.out.println("Signature: "+ toHexString(sigBytes)+ "length"+sigBytes.length);
+        byte[] combined = new byte[Wtosend.length + sigBytes.length];
+        System.arraycopy(Wtosend, 0, combined, 0, Wtosend.length);
+
+        // Append the signature bytes to the new array
+        System.arraycopy(sigBytes, 0, combined, Wtosend.length, sigBytes.length);
+
+        CommandAPDU apdu = new CommandAPDU(0,GETMASTER,0,0,combined);
+
+
 
 //        BYTE LC LENGTH OF COMMAND DATA WILL BE AUTOMATICALLY DETERMINED SO AFTER P1 P2 JUST GIVE DATA BYTE ARRAY
 //        MAXIMUM BYTES DATA CAN FIT IS 255 BYTES.
