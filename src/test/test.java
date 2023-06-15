@@ -10,6 +10,11 @@ public class test extends Applet implements ISO7816 {
 
     private static ECPublicKey publicKey;
     private static ECPrivateKey privateKey;
+
+    private static short cardid;
+    private static byte[] cardidbytes = new byte[2];
+
+
     private final static byte HELLOMSG = (byte) 0; // TEST MESSAGE 1
 
     private final static byte PersonalizationTerminal_MSG1 = (byte) 1; // tell card to generate and send public key
@@ -95,7 +100,7 @@ public class test extends Applet implements ISO7816 {
 
 
 
-    public static void receiveMaster(APDU apdu) { //signing works now. fix initializing the public key!!
+    public static void receiveMaster(APDU apdu) {
         byte[] buffer = apdu.getBuffer();
         short dataLength = apdu.setIncomingAndReceive();
         KeyPair keypair = new KeyPair(KeyPair.ALG_EC_FP, KeyBuilder.LENGTH_EC_FP_192);
@@ -106,6 +111,11 @@ public class test extends Applet implements ISO7816 {
         // set length and offset of the signature
         short sigOffset = (short)(ISO7816.OFFSET_CDATA + 49);
         short sigLength = (short)(dataLength - 49);
+
+        //set the card id
+        short cardidOffset = (short) (ISO7816.OFFSET_CDATA + dataLength - 2);
+        Util.arrayCopy(buffer, cardidOffset, cardidbytes, (short) 0, (short) 2);
+
 
 
         Signature m_verify = Signature.getInstance(Signature.ALG_ECDSA_SHA, false);
@@ -120,8 +130,11 @@ public class test extends Applet implements ISO7816 {
             ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
         }
         // Send success message
-        buffer[ISO7816.OFFSET_CDATA] = (byte) 0x90; // Success code
-        apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (short)1);
+//        buffer[ISO7816.OFFSET_CDATA] = (byte) 0x90; // Success code
+        buffer[ISO7816.OFFSET_CDATA] = cardidbytes[0]; // Success code
+        buffer[ISO7816.OFFSET_CDATA+1] = cardidbytes[1]; // Success code
+
+        apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (short)2);
 
         // TODO: send and initialize the id with personalization msg 2
     }

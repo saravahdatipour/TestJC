@@ -133,10 +133,10 @@ public class personalizationTerminal {
         // =================== GENERATE ID ===========================
         CardIdGenerator generator = new CardIdGenerator();
         short cardid = generator.getNextId();
-        byte[] cardidbytes = new byte[4];
-        cardidbytes[0] = (byte) cardid;
-        cardidbytes[1] = (byte) (cardid >> 8);
-        System.out.println("Current Card_Id: " + cardidbytes[1] + cardidbytes[0] );
+        byte[] cardidbytes = new byte[2];
+        cardidbytes[1] = (byte) cardid; //big endian
+        cardidbytes[0] = (byte) (cardid >> 8);
+        System.out.println("Current Card_Id: " + cardidbytes[0] + cardidbytes[1] );
         // =================== LOAD (master,MASTER) ===========================
         ECPublicKey publicKey = loadPublicKeyFromFile("public.key");
         ECPrivateKey privateKey = loadPrivateKeyFromFile("private.key");
@@ -146,35 +146,32 @@ public class personalizationTerminal {
         BigInteger Wy = W.getAffineY();
         byte[] Wxba = toUnsignedByteArray(Wx);
         byte[] Wyba = toUnsignedByteArray(Wy);
-// Handle the case when Wxba and Wyba are less than 24 bytes
-        //Wxba = Arrays.copyOf(Wxba, 24);
-        //Wyba = Arrays.copyOf(Wyba, 24);
+        // Handle the case when Wxba and Wyba are less than 24 bytes
         byte[] Wtosend = new byte[1 + Wxba.length + Wyba.length];
-    //  add the 0x04 byte -> encoding for uncompressed coords
+        // add the 0x04 byte -> encoding for uncompressed coords
         Wtosend[0] = (byte) 4;
         //put the x and y in Wtosend
         System.arraycopy(Wxba, 0, Wtosend, 1, Wxba.length);
         System.arraycopy(Wyba, 0, Wtosend, 1 + Wxba.length, Wyba.length);
-    // ===========================================================================
-
+        // ===========================================================================
 
         // =================== SIGN card public key with (master) ===========================
         // Message to be signed
         byte[] message = cardPublicKeybytes;
 
-//        // Sign the message
+        // Sign the message
         Signature signature = Signature.getInstance("SHA1withECDSA", "BC");
         signature.initSign(privateKey, new SecureRandom());
         signature.update(message);
         byte[] sigBytes = signature.sign();
 
         //putting everything together in buffer to send
-        byte[] combined = new byte[Wtosend.length + sigBytes.length];
+        byte[] combined = new byte[Wtosend.length + sigBytes.length + cardidbytes.length];
         System.arraycopy(Wtosend, 0, combined, 0, Wtosend.length);
         System.arraycopy(sigBytes, 0, combined, Wtosend.length, sigBytes.length);
-
+        System.arraycopy(cardidbytes, 0, combined, Wtosend.length + sigBytes.length, cardidbytes.length);
+        System.out.println(toHexString(cardidbytes));
         CommandAPDU apdu = new CommandAPDU(0,PersonalizationTerminal_MSG2,0,0,combined);
-
 
 
 //        BYTE LC LENGTH OF COMMAND DATA WILL BE AUTOMATICALLY DETERMINED SO AFTER P1 P2 JUST GIVE DATA BYTE ARRAY
@@ -207,7 +204,7 @@ public class personalizationTerminal {
         }
         byte[] cardPublicKeybytes = personalization_terminal.sendPersonalizationMSG1();
         personalization_terminal.sendPersonalizationMSG2(cardPublicKeybytes);
-        System.out.println("Received card public key: " + toHexString(cardPublicKeybytes));
+//        System.out.println("Received card public key: " + toHexString(cardPublicKeybytes));
 
 
 //        personalization_terminal.sendPersonalizationMSG2();
