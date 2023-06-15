@@ -130,11 +130,13 @@ public class test extends Applet implements ISO7816 {
         if (!IsVerified) {
             ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
         }
-        // Send success message
-        buffer[ISO7816.OFFSET_CDATA] = cardidbytes[0]; // Success code
-        buffer[ISO7816.OFFSET_CDATA+1] = cardidbytes[1]; // Return the second byte of card id
+        // Send test message
+        buffer[ISO7816.OFFSET_CDATA] = cardidbytes[0];
+        buffer[ISO7816.OFFSET_CDATA+1] = cardidbytes[1];
 
         apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (short)2);
+
+        //TODO: saving MasterPublicKey for future operations + state and sending OK message back?
 
     }
 

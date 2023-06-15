@@ -20,9 +20,9 @@ public class KeyUtils {
             KeyPair keyPair = generateKeyPair();
             saveKeyPairToFile(keyPair, "private.key", "public.key");
 
-            // Now let's read them back
-            ECPrivateKey privateKey = loadPrivateKeyFromFile("private.key");
-            ECPublicKey publicKey = loadPublicKeyFromFile("public.key");
+//            // Now let's read them back
+//            ECPrivateKey privateKey = loadPrivateKeyFromFile("private.key");
+//            ECPublicKey publicKey = loadPublicKeyFromFile("public.key");
 
         } catch (Exception e) {
             e.printStackTrace();
