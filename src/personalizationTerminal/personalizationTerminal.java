@@ -1,20 +1,16 @@
 package personalizationTerminal;
 
-import com.licel.jcardsim.bouncycastle.asn1.ASN1Integer;
-import com.licel.jcardsim.bouncycastle.asn1.ASN1Sequence;
 //import javacard.security.Signature;
 import test.test; //import your javacard applet
 import com.licel.jcardsim.smartcardio.CardSimulator;
 import com.licel.jcardsim.smartcardio.CardTerminalSimulator;
 import javacard.framework.AID;
-import KeyUtils.KeyUtils.*;
-import javax.smartcardio.*;
+
+        import javax.smartcardio.*;
 
 import java.io.*;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
+        import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
@@ -27,8 +23,6 @@ import static KeyUtils.KeyUtils.loadPublicKeyFromFile;
 
 public class personalizationTerminal {
     //    =================================== Global vars for instruction bytes to send to the card =====================================
-    private final static byte HELLOMSG= (byte) 0; // tell card to generate and send public key
-    private final static byte GETMASTER = (byte) 5; // TEST MESSAGE 1
 
     private final static byte PersonalizationTerminal_MSG1 = (byte) 1; // tell card to generate and send public key
     private final static byte PersonalizationTerminal_MSG2 = (byte) 2; // send signed public key (cert), Master public key, ID of user
@@ -118,143 +112,85 @@ public class personalizationTerminal {
             return nextId;
         }
     }
-    public ResponseAPDU sendPersonalizationMSG1(){ //has to be edited to MSG2. MSG1 should only initialize the protocol
 
+    public byte[] sendPersonalizationMSG1(){ //wakes card, receives public key
 
-//        BYTE LC LENGTH OF COMMAND DATA WILL BE AUTOMATICALLY DETERMINED SO AFTER P1 P2 JUST GIVE DATA BYTE ARRAY
-//        MAXIMUM BYTES DATA CAN FIT IS 255 BYTES.
         CommandAPDU apdu = new CommandAPDU(0,PersonalizationTerminal_MSG1,0,0);
 
         try {
             ResponseAPDU response = applet.transmit(apdu);
-
-            byte[] responsedata = response.getData();
+            byte[] cardPublicKeybytes = response.getData();
             System.out.println("Raw content of the command: " + toHexString(apdu.getBytes()));
-            return null;
+            System.out.println("Raw content of the response: " + toHexString(response.getBytes()));
+
+            return cardPublicKeybytes;
         }
         catch (CardException e){
             return null;
-        }//end exception
+        }
     }//end sendPersonalizationMSG2
-    public ResponseAPDU sendPersonalizationMSG2() throws Exception { //has to be edited to MSG2. MSG1 should only initialize the protocol
+    public ResponseAPDU sendPersonalizationMSG2(byte[] cardPublicKeybytes) throws Exception {
         // =================== GENERATE ID ===========================
         CardIdGenerator generator = new CardIdGenerator();
         short cardid = generator.getNextId();
         byte[] cardidbytes = new byte[4];
         cardidbytes[0] = (byte) cardid;
         cardidbytes[1] = (byte) (cardid >> 8);
-        System.out.println("cardid in bytearray : " + cardidbytes[0] + cardidbytes[1] );
+        System.out.println("Current Card_Id: " + cardidbytes[1] + cardidbytes[0] );
         // =================== LOAD (master,MASTER) ===========================
         ECPublicKey publicKey = loadPublicKeyFromFile("public.key");
         ECPrivateKey privateKey = loadPrivateKeyFromFile("private.key");
-        //-------getting all the params-----------
-        ECParameterSpec ecParameterSpec = publicKey.getParams();
-        BigInteger a = ecParameterSpec.getCurve().getA();
-        BigInteger b = ecParameterSpec.getCurve().getB();
-        BigInteger p = ((java.security.spec.ECFieldFp) ecParameterSpec.getCurve().getField()).getP();
-        BigInteger n = ecParameterSpec.getOrder();
-        BigInteger Gx = ecParameterSpec.getGenerator().getAffineX();
-        BigInteger Gy = ecParameterSpec.getGenerator().getAffineY();
-        int h = ecParameterSpec.getCofactor();
-        int keySize = n.bitLength();  // Get key size in bits
         // Get public key point W
-        BigInteger bigIntegerPrivateKey = privateKey.getS();
-        byte[] privateKeyBytes = bigIntegerPrivateKey.toByteArray();
-        System.out.println("Private key: " + toHexString(privateKeyBytes));
         ECPoint W = publicKey.getW();
         BigInteger Wx = W.getAffineX();
         BigInteger Wy = W.getAffineY();
         byte[] Wxba = toUnsignedByteArray(Wx);
         byte[] Wyba = toUnsignedByteArray(Wy);
 // Handle the case when Wxba and Wyba are less than 24 bytes
-        Wxba = Arrays.copyOf(Wxba, 24);
-        Wyba = Arrays.copyOf(Wyba, 24);
-
+        //Wxba = Arrays.copyOf(Wxba, 24);
+        //Wyba = Arrays.copyOf(Wyba, 24);
         byte[] Wtosend = new byte[1 + Wxba.length + Wyba.length];
-
-// First, add the 0x04 byte
+    //  add the 0x04 byte -> encoding for uncompressed coords
         Wtosend[0] = (byte) 4;
-
-// Copy Wxba into combined, starting after 0x04
+        //put the x and y in Wtosend
         System.arraycopy(Wxba, 0, Wtosend, 1, Wxba.length);
-
-// Copy Wyba into combined, starting after Wxba
         System.arraycopy(Wyba, 0, Wtosend, 1 + Wxba.length, Wyba.length);
-
-        System.out.println("W: " + toHexString(Wtosend));
-        System.out.println("W length: " + (Wtosend.length));
-
-        //-------------------------------------------
-        // Create APDU command
-//        CommandAPDU apdu = new CommandAPDU(0,GETMASTER,0,0,Wtosend);
-
+    // ===========================================================================
 
 
         // =================== SIGN card public key with (master) ===========================
         // Message to be signed
-        byte[] message = "S".getBytes();
+        byte[] message = cardPublicKeybytes;
 
 //        // Sign the message
         Signature signature = Signature.getInstance("SHA1withECDSA", "BC");
         signature.initSign(privateKey, new SecureRandom());
         signature.update(message);
         byte[] sigBytes = signature.sign();
-//
-//        signature.initVerify(publicKey);
-//        signature.update(message);
-//        boolean isVerified = signature.verify(sigBytes);
-//        System.out.println("Is verified: "+ isVerified);
-////// Extract r and s from the signature
-//        ASN1Sequence sequence = ASN1Sequence.getInstance(sigBytes);
-//        ASN1Integer r = (ASN1Integer) sequence.getObjectAt(0);
-//        ASN1Integer s = (ASN1Integer) sequence.getObjectAt(1);
-//        System.out.println("r: "+ toHexString(r.getEncoded()) + " s: " + toHexString(s.getEncoded()));
 
-//
-//// Ensure constant length by padding with leading zeros if necessary
-//        byte[] rBytes = r.getValue().toByteArray();
-//        byte[] sBytes = s.getValue().toByteArray();
-//        rBytes = Arrays.copyOf(rBytes, 24);  // 24 bytes (192 bits) for r
-//        sBytes = Arrays.copyOf(sBytes, 24);  // 24 bytes (192 bits) for s
-//
-//// Concatenate r and s to form the signature
-//        sigBytes = new byte[rBytes.length + sBytes.length];
-//        System.arraycopy(rBytes, 0, sigBytes, 0, rBytes.length);
-//        System.arraycopy(sBytes, 0, sigBytes, rBytes.length, sBytes.length);
-//
-//
-//
-//
-//
-        System.out.println("Signature: "+ toHexString(sigBytes)+ "length"+sigBytes.length);
+        //putting everything together in buffer to send
         byte[] combined = new byte[Wtosend.length + sigBytes.length];
         System.arraycopy(Wtosend, 0, combined, 0, Wtosend.length);
-
-        // Append the signature bytes to the new array
         System.arraycopy(sigBytes, 0, combined, Wtosend.length, sigBytes.length);
 
-        CommandAPDU apdu = new CommandAPDU(0,GETMASTER,0,0,combined);
+        CommandAPDU apdu = new CommandAPDU(0,PersonalizationTerminal_MSG2,0,0,combined);
 
 
 
 //        BYTE LC LENGTH OF COMMAND DATA WILL BE AUTOMATICALLY DETERMINED SO AFTER P1 P2 JUST GIVE DATA BYTE ARRAY
 //        MAXIMUM BYTES DATA CAN FIT IS 255 BYTES.
-//        CommandAPDU apdu = new CommandAPDU(0,PersonalizationTerminal_MSG2,0,0,cardidbytes,0);
 
         try {
             ResponseAPDU response = applet.transmit(apdu);
-//        System.out.println(response.getSW()); //should be 36864, in hex would be 9000 -> successful status code
             byte[] responsedata = response.getData();
             System.out.println("Raw content of the command: " + toHexString(apdu.getBytes()));
-            System.out.println("Received Data From Applet in Array: " + Arrays.toString(responsedata));
             System.out.println("Raw content of the response: " + toHexString(response.getBytes()));
-
 
             return null;
         }
         catch (CardException e){
             return null;
-        }//end exception
+        }
     }//end sendPersonalizationMSG2
 
 
@@ -269,7 +205,12 @@ public class personalizationTerminal {
         } catch (Exception e) {
             System.err.println("waiting failed?");
         }
-        personalization_terminal.sendPersonalizationMSG2();
+        byte[] cardPublicKeybytes = personalization_terminal.sendPersonalizationMSG1();
+        personalization_terminal.sendPersonalizationMSG2(cardPublicKeybytes);
+        System.out.println("Received card public key: " + toHexString(cardPublicKeybytes));
+
+
+//        personalization_terminal.sendPersonalizationMSG2();
         System.out.println("Card inserted applet selected");
 
 
