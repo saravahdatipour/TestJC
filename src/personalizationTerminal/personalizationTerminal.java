@@ -157,7 +157,14 @@ public class personalizationTerminal {
 
         // =================== SIGN card public key with (master) ===========================
         // Message to be signed
-        byte[] message = cardPublicKeybytes;
+// Message to be signed
+        byte[] message = new byte[cardPublicKeybytes.length + cardidbytes.length];
+
+        System.arraycopy(cardPublicKeybytes, 0, message, 0, cardPublicKeybytes.length);
+        System.arraycopy(cardidbytes, 0, message, cardPublicKeybytes.length, cardidbytes.length);
+
+        System.out.println("pubkey and id: " + Arrays.toString(message));
+
 
         // Sign the message
         Signature signature = Signature.getInstance("SHA1withECDSA", "BC");

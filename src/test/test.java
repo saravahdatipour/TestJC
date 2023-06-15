@@ -116,28 +116,28 @@ public class test extends Applet implements ISO7816 {
         short cardidOffset = (short) (ISO7816.OFFSET_CDATA + dataLength - 2);
         Util.arrayCopy(buffer, cardidOffset, cardidbytes, (short) 0, (short) 2);
 
-
-
         Signature m_verify = Signature.getInstance(Signature.ALG_ECDSA_SHA, false);
         m_verify.init(MasterpublicKey, Signature.MODE_VERIFY);
-        // Predefined message to be the public key on the card
-        byte[] message = new byte[49];
+        // Predefined message to be the public key on the card + card id
+        byte[] message = new byte[51];
         publicKey.getW(message,(short) 0);
 
-//         VERIFY SIGNATURE
-        boolean IsVerified = m_verify.verify(message, (short)0, (short)49, buffer, sigOffset, sigLength);
+        // Add the card id to the message
+        Util.arrayCopy(cardidbytes, (short) 0, message, (short) 49, (short) 2);
+
+        // VERIFY SIGNATURE
+        boolean IsVerified = m_verify.verify(message, (short)0, (short)message.length, buffer, sigOffset, sigLength);
         if (!IsVerified) {
             ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
         }
         // Send success message
-//        buffer[ISO7816.OFFSET_CDATA] = (byte) 0x90; // Success code
         buffer[ISO7816.OFFSET_CDATA] = cardidbytes[0]; // Success code
-        buffer[ISO7816.OFFSET_CDATA+1] = cardidbytes[1]; // Success code
+        buffer[ISO7816.OFFSET_CDATA+1] = cardidbytes[1]; // Return the second byte of card id
 
         apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (short)2);
 
-        // TODO: send and initialize the id with personalization msg 2
     }
+
 
 
 
