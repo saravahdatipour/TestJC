@@ -8,7 +8,7 @@ JCARDSIM=jcardsim-3.0.4-SNAPSHOT
 JC_CLASSPATH=${JC_HOME}/lib/apdutool.jar:${JC_HOME}/lib/apduio.jar:${JC_HOME}/lib/converter.jar:${JC_HOME}/lib/jcwde.jar:${JC_HOME}/lib/scriptgen.jar:${JC_HOME}/lib/offcardverifier.jar:${JC_HOME}/lib/api.jar:${JC_HOME}/lib/installer.jar:${JC_HOME}/lib/capdump.jar:${JC_HOME}/samples/classes:${CLASSPATH}
 
 # be sure to build the applets before the terminal otherwise the terminal can't run
-all:  testapplet testterminal personalizationterminal keyutils runkeyutils
+all:  testapplet testterminal personalizationterminal keyutils runkeyutils posterminal carterminal
 
 # applet is the card
 testapplet: out/test/test.class
@@ -32,6 +32,24 @@ out/terminal/personalizationTerminal.class: src/personalizationTerminal/personal
 
 runpersonalizationterminal:
 	java -cp util/jcardsim/${JCARDSIM}.jar:/home/sara/Desktop/TestJC/lib/BouncyCastle/bcprov-jdk15to18-174.jar:out personalizationTerminal.personalizationTerminal
+
+
+posterminal: out/terminal/POSTerminal.class
+
+out/terminal/POSTerminal.class: src/POSTerminal/POSTerminal.java
+	javac -d out -cp ${JC_HOME}:util/jcardsim/${JCARDSIM}.jar:out src/POSTerminal/POSTerminal.java
+
+runposterminal:
+	java -cp util/jcardsim/${JCARDSIM}.jar:out POSTerminal.POSTerminal
+
+
+carterminal: out/terminal/CarTerminal.class
+
+out/terminal/CarTerminal.class: src/CarTerminal/CarTerminal.java
+	javac -d out -cp ${JC_HOME}:util/jcardsim/${JCARDSIM}.jar:out src/CarTerminal/CarTerminal.java
+
+runcarterminal:
+	java -cp util/jcardsim/${JCARDSIM}.jar:out CarTerminal.CarTerminal
 
 keyutils: out/terminal/keyutils.class
 

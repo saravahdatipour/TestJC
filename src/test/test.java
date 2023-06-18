@@ -145,8 +145,6 @@ public class test extends Applet implements ISO7816 {
 
         apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (short)2);
 
-        //TODO: saving MasterPublicKey for future operations + state and sending OK message back?
-
     }
 
 
