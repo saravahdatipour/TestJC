@@ -7,17 +7,20 @@ import javacard.framework.AID;
 
 
 import javax.smartcardio.*;
-import java.util.Arrays;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.KeyPair;
+import java.security.Signature;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECPoint;
+
+import static KeyUtils.KeyUtils.*;
 
 
 public class POSTerminal {
-    //    =================================== Global vars for instruction bytes to send to the card =====================================
-    private final static byte HELLOMSG= (byte) 0; // tell card to generate and send public key
-
-    private final static byte PersonalizationTerminal_MSG1 = (byte) 1; // tell card to generate and send public key
-    private final static byte PersonalizationTerminal_MSG2 = (byte) 2; // send signed public key (cert), Master public key, ID of user
-    //    =================================================================================================================================
-    private final static byte MutualAuth_MSG1 = (byte) 3; // send card public key of the terminal
 
 
     //    =================================== Global vars for applet ======================================================================
@@ -28,7 +31,13 @@ public class POSTerminal {
     static final CommandAPDU SELECT_APDU = new CommandAPDU((byte) 0x00, (byte) 0xA4, (byte) 0x04, (byte) 0x00, TEST_APPLET_AID);
 
     CardChannel applet;
-//    =================================================================================================================================
+//    =============================================== Global Key Materials ===========================================================
+
+    ECPublicKey terminalPublicKey;
+    ECPrivateKey terminalPrivateKey;
+
+    private byte[] Cert_Terminal;
+
 
 
 
@@ -66,49 +75,113 @@ public class POSTerminal {
     public POSTerminal() {
         (new SimulatedCardThread()).start();}
 
-    public ResponseAPDU sendHello(){
-        byte[] datatosend = {1,2,3,4,5,6,7,8,9,10};
-        byte[] moredatatosend = {11,12,13,14,15,16,17,18,19,20};
+    public ResponseAPDU verifyCard(){
 
-        CommandAPDU apdu1 = new CommandAPDU((byte)16,HELLOMSG,0,0,datatosend,(byte) 20);
-        CommandAPDU apdu2 = new CommandAPDU(0,HELLOMSG,0,0,moredatatosend,(byte) 20);
-
-        try {
-            ResponseAPDU response = applet.transmit(apdu1);
-//        System.out.println(response.getSW()); //should be 36864, in hex would be 9000 -> successful status code
-            short card_id = 137; //generate this from a file
-            byte[] data = response.getData();
-            System.out.println("Received Data From Applet in Array: " + Arrays.toString(data));
-            System.out.println("Command APDU: " + apdu1.toString());
-            System.out.println("Raw content " + apdu1.getBytes());
-
-            System.out.println("Raw content of the command: " + toHexString(apdu1.getBytes()));
-            System.out.println("Raw content of the command: " + toHexString(apdu2.getBytes()));
-
-            System.out.println("Response APDU: " + response.toString());
-            System.out.println("Raw content of the response: " + toHexString(response.getBytes()));
-            //https://stackoverflow.com/questions/32994936/safe-max-java-card-apdu-data-command-and-respond-size
             return null;
+
+    }//end verifyCard
+
+    public ResponseAPDU rentCar(){
+        //how to choose the car?
+        //TODO: check if cardid is in not renting log
+        //TODO: check if car id is in is_available list
+        //TODO: log cardid rented car id and length of time of rental --> expected end-date will be = now + length of time of rental
+        //TODO: create and send Certrent = Signb(CertCard, IDCar, e, Certpost)
+        return null;
+
+    }//end chooseCar
+
+    public byte[] mutualAuthentication(){
+        //1. verify public key of card
+        verifyCard();
+        //2. put public key of card in A
+        //3. diffie-hellman between private key of self and public key of A
+        //4.  challenge and response -> ? card proves to terminal it has S
+        //4a.
+        byte[] S = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}; //shared secret will be same size az public key of the curve
+        return S;
+
+    }//end chooseCar
+
+    public void getPersonalized() throws Exception {
+        // load MasterPublic.key
+        ECPublicKey Master = loadPublicKeyFromFile("Keys/MasterKeys/public.key");
+
+        // Check if POS keys already exist
+        File terminalPrivateKeyfile = new File("Keys/POSKeys/private.key");
+        File terminalPublicKeyfile = new File("Keys/POSKeys/public.key");
+
+        if (!terminalPrivateKeyfile.exists() || !terminalPublicKeyfile.exists()) {
+            // Create key pair and save it to file if they do not exist
+            KeyPair keyPair = generateKeyPair();
+            saveKeyPairToFile(keyPair, "Keys/POSKeys/private.key", "Keys/POSKeys/public.key");
         }
-        catch (CardException e){
-            return null;
-        }//end exception
-    }//end sendHello
+        //loading POS PUB key in a byte array POS_Wba
+        this.terminalPublicKey = loadPublicKeyFromFile("Keys/POSKeys/public.key");
+//        this.terminalPrivateKey = loadPrivateKeyFromFile("Keys/POSKeys/private.key");
+
+
+        ECPoint POS_W =  terminalPublicKey.getW();
+        BigInteger Wx = POS_W.getAffineX();
+        BigInteger Wy = POS_W.getAffineY();
+        byte[] Wxba = toUnsignedByteArray(Wx);
+        byte[] Wyba = toUnsignedByteArray(Wy);
+        byte[] POS_Wba = new byte[ Wxba.length + Wyba.length];
+        System.arraycopy(Wxba, 0, POS_Wba, 0, Wxba.length);
+        System.arraycopy(Wyba, 0, POS_Wba, Wxba.length, Wyba.length);
+
+
+        //after saving keys, public key is read by personalization terminal and a certificate of this is made at Cert_Terminal.txt
+        try {
+            File certTerminalFile = new File("Cert_Terminal.txt");
+            if (certTerminalFile.exists()) {
+                try {
+                    this.Cert_Terminal = readCertTerminalFromFile("Cert_Terminal.txt");
+                } catch (Exception e) {
+                    System.out.println("Error reading from Cert_Terminal.txt");
+                    e.printStackTrace();
+                    return; // Return from the method or handle the error appropriately
+                }
+                //check if the certificate verifies with master public key
+                boolean isSignatureValid = verifySignature(Master, POS_Wba, Cert_Terminal);
+                System.out.println(" Cert_Terminal Verified: " + isSignatureValid);
+            } else {
+                System.out.println("Cert_Terminal.txt does not exist. Run the Personalization again.");
+            }
+        } catch (Exception e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
 
 
 
-    public static void main(String[] arg) {
+    }
+
+
+
+
+    public static void main(String[] arg) throws Exception {
         System.out.println("Main of test Terminal is running");
-        POSTerminal test_terminal = new POSTerminal();
+        POSTerminal posterminal = new POSTerminal();
 
         try {
             Thread.sleep(1000);
         } catch (Exception e) {
             System.err.println("waiting failed?");
         }
-        test_terminal.sendHello();
-        System.out.println("sendHello is done");
+        posterminal.getPersonalized();
+        System.out.println("certificate of own public key loaded");
+
+        posterminal.verifyCard();
+        System.out.println("card verified");
+        posterminal.rentCar();
+        System.out.println("car chosen");
+
+
         System.out.println("Card inserted applet selected");
+
+        //TODO: After a POST is personalised it also receives the list of all Certcar of all cars available on a particular location.
+        //TODO: When this happens the POST verifies all the Certcar using M aster
 
     }
     public static String toHexString(byte[] bytes) {
@@ -118,4 +191,45 @@ public class POSTerminal {
         }
         return sb.toString();
     }
+
+    public static byte[] readCertTerminalFromFile(String filePath) throws Exception {
+        File file = new File(filePath);
+        byte[] Cert_Terminal = new byte[(int) file.length()];
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(file);
+            fis.read(Cert_Terminal);
+        } catch (IOException e) {
+            throw new Exception("Unable to read Cert_Terminal from the file", e);
+        } finally {
+            if (fis != null) {
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return Cert_Terminal;
+    }
+
+    public boolean verifySignature(ECPublicKey publicKey, byte[] message, byte[] signatureBytes) throws Exception {
+        Signature signature = Signature.getInstance("SHA1withECDSA", "BC");
+        signature.initVerify(publicKey);
+        signature.update(message);
+        return signature.verify(signatureBytes);
+    }
+
+    public static byte[] toUnsignedByteArray(BigInteger value) {
+        byte[] originalByteArray = value.toByteArray();
+        if (originalByteArray[0] == 0) {
+            byte[] unsignedByteArray = new byte[originalByteArray.length - 1];
+            System.arraycopy(originalByteArray, 1, unsignedByteArray, 0, unsignedByteArray.length);
+            return unsignedByteArray;
+        } else {
+            return originalByteArray;
+        }
+    }
+
 }

@@ -147,6 +147,50 @@ public class test extends Applet implements ISO7816 {
 
     }
 
+    public static void verifyTerminal(APDU apdu) {
+        byte[] buffer = apdu.getBuffer();
+        short dataLength = apdu.setIncomingAndReceive();
+        KeyPair keypair = new KeyPair(KeyPair.ALG_EC_FP, KeyBuilder.LENGTH_EC_FP_192);
+        keypair.genKeyPair();
+        MasterpublicKey = (ECPublicKey) keypair.getPublic();
+        MasterpublicKey.setW(buffer, ISO7816.OFFSET_CDATA, (short) 49);
+
+        // set length and offset of the signature
+        short sigOffset = (short)(ISO7816.OFFSET_CDATA + 49);
+        short sigLength = (short)(dataLength - 49);
+
+        //set the card id
+        short cardidOffset = (short) (ISO7816.OFFSET_CDATA + dataLength - 2);
+        Util.arrayCopy(buffer, cardidOffset, cardidbytes, (short) 0, (short) 2);
+
+        Signature m_verify = Signature.getInstance(Signature.ALG_ECDSA_SHA, false);
+        m_verify.init(MasterpublicKey, Signature.MODE_VERIFY);
+        // Predefined message to be the public key on the card + card id
+        byte[] message = new byte[51];
+        publicKey.getW(message,(short) 0);
+
+        // Add the card id to the message
+        Util.arrayCopy(cardidbytes, (short) 0, message, (short) 49, (short) 2);
+
+        // VERIFY SIGNATURE
+        boolean IsVerified = m_verify.verify(message, (short)0, (short)message.length, buffer, sigOffset, sigLength);
+        if (!IsVerified) {
+            ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
+        }
+
+        //set state
+
+        STATE = (byte) 0x01;
+
+
+
+        buffer[ISO7816.OFFSET_CDATA] = (byte) 0x4F;
+        buffer[ISO7816.OFFSET_CDATA+1] = (byte) 0x4B; //ASCII for OK
+
+        apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (short)2);
+
+    }
+
 
 
 

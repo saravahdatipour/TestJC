@@ -18,7 +18,7 @@ public class KeyUtils {
     public static void main(String[] args) {
         try {
             KeyPair keyPair = generateKeyPair();
-            saveKeyPairToFile(keyPair, "private.key", "public.key");
+            saveKeyPairToFile(keyPair, "Keys/MasterKeys/private.key", "Keys/MasterKeys/public.key");
 
 //            // Now let's read them back
 //            ECPrivateKey privateKey = loadPrivateKeyFromFile("private.key");
@@ -66,6 +66,9 @@ public class KeyUtils {
         KeyFactory kf = KeyFactory.getInstance("EC", "BC");
         return (ECPrivateKey) kf.generatePrivate(spec);
     }
+
+
+
 
     public static ECPublicKey loadPublicKeyFromFile(String fileName) throws Exception {
         byte[] keyBytes = Files.readAllBytes(Paths.get(fileName));

@@ -37,10 +37,10 @@ runpersonalizationterminal:
 posterminal: out/terminal/POSTerminal.class
 
 out/terminal/POSTerminal.class: src/POSTerminal/POSTerminal.java
-	javac -d out -cp ${JC_HOME}:util/jcardsim/${JCARDSIM}.jar:out src/POSTerminal/POSTerminal.java
+	javac -d out -cp ${JC_HOME}:util/jcardsim/${JCARDSIM}.jar:/home/sara/Desktop/TestJC/lib/BouncyCastle/bcprov-jdk15to18-174.jar:out src/POSTerminal/POSTerminal.java
 
 runposterminal:
-	java -cp util/jcardsim/${JCARDSIM}.jar:out POSTerminal.POSTerminal
+	java -cp util/jcardsim/${JCARDSIM}.jar:/home/sara/Desktop/TestJC/lib/BouncyCastle/bcprov-jdk15to18-174.jar:out POSTerminal.POSTerminal
 
 
 carterminal: out/terminal/CarTerminal.class

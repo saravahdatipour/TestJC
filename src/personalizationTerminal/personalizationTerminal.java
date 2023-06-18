@@ -19,6 +19,7 @@ import java.util.Arrays;
 
 import static KeyUtils.KeyUtils.loadPrivateKeyFromFile;
 import static KeyUtils.KeyUtils.loadPublicKeyFromFile;
+import static POSTerminal.POSTerminal.readCertTerminalFromFile;
 
 
 public class personalizationTerminal {
@@ -76,6 +77,163 @@ public class personalizationTerminal {
     public personalizationTerminal() {
         (new SimulatedCardThread()).start();}
 
+
+
+    public byte[] startCardPersonalization(){ //wakes card, receives public key
+
+        CommandAPDU apdu = new CommandAPDU(0,PersonalizationTerminal_MSG1,0,0);
+
+        try {
+            ResponseAPDU response = applet.transmit(apdu);
+            byte[] cardPublicKeybytes = response.getData();
+            System.out.println("Raw content of the command: " + toHexString(apdu.getBytes()));
+            System.out.println("Raw content of the response: " + toHexString(response.getBytes()));
+
+            return cardPublicKeybytes;
+        }
+        catch (CardException e){
+            return null;
+        }
+    }//end sendPersonalizationMSG2
+    public ResponseAPDU personalizeCard(byte[] cardPublicKeybytes) throws Exception {
+        // =================== GENERATE ID ===========================
+        CardIdGenerator generator = new CardIdGenerator();
+        short cardid = generator.getNextId();
+        byte[] cardidbytes = new byte[2];
+        cardidbytes[1] = (byte) cardid; //big endian
+        cardidbytes[0] = (byte) (cardid >> 8);
+        System.out.println("Current Card_Id: " + cardidbytes[0] + cardidbytes[1] );
+        // =================== LOAD (master,MASTER) ===========================
+        ECPublicKey publicKey = loadPublicKeyFromFile("Keys/MasterKeys/public.key");
+        ECPrivateKey privateKey = loadPrivateKeyFromFile("Keys/MasterKeys/private.key");
+        // Get public key point W
+        ECPoint W = publicKey.getW();
+        BigInteger Wx = W.getAffineX();
+        BigInteger Wy = W.getAffineY();
+        byte[] Wxba = toUnsignedByteArray(Wx);
+        byte[] Wyba = toUnsignedByteArray(Wy);
+        // Handle the case when Wxba and Wyba are less than 24 bytes
+        byte[] Wtosend = new byte[1 + Wxba.length + Wyba.length];
+        // add the 0x04 byte -> encoding for uncompressed coords
+        Wtosend[0] = (byte) 4;
+        //put the x and y in Wtosend
+        System.arraycopy(Wxba, 0, Wtosend, 1, Wxba.length);
+        System.arraycopy(Wyba, 0, Wtosend, 1 + Wxba.length, Wyba.length);
+        // ===========================================================================
+
+        // =================== SIGN card public key with (master) ===========================
+        // message = card public key to be signed
+        byte[] message = new byte[cardPublicKeybytes.length + cardidbytes.length];
+
+        System.arraycopy(cardPublicKeybytes, 0, message, 0, cardPublicKeybytes.length);
+        System.arraycopy(cardidbytes, 0, message, cardPublicKeybytes.length, cardidbytes.length);
+
+        System.out.println("pubkey and id: " + Arrays.toString(message));
+
+
+        // Sign the message
+        Signature signature = Signature.getInstance("SHA1withECDSA", "BC");
+        signature.initSign(privateKey, new SecureRandom());
+        signature.update(message);
+        byte[] sigBytes = signature.sign();
+
+        //putting everything together in buffer to send
+        byte[] combined = new byte[Wtosend.length + sigBytes.length + cardidbytes.length];
+        System.arraycopy(Wtosend, 0, combined, 0, Wtosend.length);
+        System.arraycopy(sigBytes, 0, combined, Wtosend.length, sigBytes.length);
+        System.arraycopy(cardidbytes, 0, combined, Wtosend.length + sigBytes.length, cardidbytes.length);
+        System.out.println(toHexString(cardidbytes));
+        CommandAPDU apdu = new CommandAPDU(0,PersonalizationTerminal_MSG2,0,0,combined);
+
+        //TODO: add cardid to not renting log
+//        BYTE LC LENGTH OF COMMAND DATA WILL BE AUTOMATICALLY DETERMINED SO AFTER P1 P2 JUST GIVE DATA BYTE ARRAY
+//        MAXIMUM BYTES DATA CAN FIT IS 255 BYTES.
+
+        try {
+            ResponseAPDU response = applet.transmit(apdu);
+            System.out.println("Raw content of the command: " + toHexString(apdu.getBytes()));
+            System.out.println("Raw content of the response: " + toHexString(response.getBytes()));
+
+            return null;
+        }
+        catch (CardException e){
+            return null;
+        }
+    }//end sendPersonalizationMSG2
+
+
+    public void personalizeTerminals(ECPrivateKey master) throws Exception { //for now personalizes POS.
+        // receive public key from the java terminal
+        ECPublicKey POSpublickey = loadPublicKeyFromFile("Keys/POSKeys/public.key");
+        ECPoint POS_W =  POSpublickey.getW();
+        BigInteger Wx = POS_W.getAffineX();
+        BigInteger Wy = POS_W.getAffineY();
+        byte[] Wxba = toUnsignedByteArray(Wx);
+        byte[] Wyba = toUnsignedByteArray(Wy);
+        byte[] POS_Wba = new byte[ Wxba.length + Wyba.length];
+        System.arraycopy(Wxba, 0, POS_Wba, 0, Wxba.length);
+        System.arraycopy(Wyba, 0, POS_Wba, Wxba.length, Wyba.length);
+
+        //create Cert_Terminal (sign the terminal public key with MasterPrivate.key)
+        // Sign the message
+        Signature signature = Signature.getInstance("SHA1withECDSA", "BC");
+        signature.initSign(master, new SecureRandom());
+        signature.update(POS_Wba);
+        byte[] Cert_Terminal = signature.sign();
+
+        // Write Cert_Terminal to a file
+        try (FileOutputStream fos = new FileOutputStream("Cert_Terminal.txt")) {
+            fos.write(Cert_Terminal);
+        } catch (IOException e) {
+            throw new Exception("Unable to write Cert_Terminal to a file", e);
+        }
+    }
+
+    public static void main(String[] arg) throws Exception {
+        System.out.println("Main of test Terminal is running");
+        personalizationTerminal personalization_terminal = new personalizationTerminal();
+
+        try {
+            Thread.sleep(1000);
+        } catch (Exception e) {
+            System.err.println("waiting failed?");
+        }
+        //if personalizing a card:
+        byte[] cardPublicKeybytes = personalization_terminal.startCardPersonalization();
+        personalization_terminal.personalizeCard(cardPublicKeybytes);
+
+        //if personalizing a java terminal:
+        ECPrivateKey master = loadPrivateKeyFromFile("Keys/MasterKeys/private.key");
+        personalization_terminal.personalizeTerminals(master);
+
+// TODO: has to be adapted to run on command line
+
+//        personalization_terminal.sendPersonalizationMSG2();
+        System.out.println("Card inserted applet selected");
+
+    }
+
+
+
+    public static String toHexString(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b: bytes) {
+            sb.append(String.format("%02X ", b));
+        }
+        return sb.toString();
+    }
+
+
+    public static byte[] toUnsignedByteArray(BigInteger value) {
+        byte[] originalByteArray = value.toByteArray();
+        if (originalByteArray[0] == 0) {
+            byte[] unsignedByteArray = new byte[originalByteArray.length - 1];
+            System.arraycopy(originalByteArray, 1, unsignedByteArray, 0, unsignedByteArray.length);
+            return unsignedByteArray;
+        } else {
+            return originalByteArray;
+        }
+    }
     public class CardIdGenerator {
         private static final String FILE_NAME = "last_id.txt";
         private short lastId;
@@ -112,149 +270,6 @@ public class personalizationTerminal {
             return nextId;
         }
     }
-
-    public byte[] sendPersonalizationMSG1(){ //wakes card, receives public key
-
-        CommandAPDU apdu = new CommandAPDU(0,PersonalizationTerminal_MSG1,0,0);
-
-        try {
-            ResponseAPDU response = applet.transmit(apdu);
-            byte[] cardPublicKeybytes = response.getData();
-            System.out.println("Raw content of the command: " + toHexString(apdu.getBytes()));
-            System.out.println("Raw content of the response: " + toHexString(response.getBytes()));
-
-            return cardPublicKeybytes;
-        }
-        catch (CardException e){
-            return null;
-        }
-    }//end sendPersonalizationMSG2
-    public ResponseAPDU sendPersonalizationMSG2(byte[] cardPublicKeybytes) throws Exception {
-        // =================== GENERATE ID ===========================
-        CardIdGenerator generator = new CardIdGenerator();
-        short cardid = generator.getNextId();
-        byte[] cardidbytes = new byte[2];
-        cardidbytes[1] = (byte) cardid; //big endian
-        cardidbytes[0] = (byte) (cardid >> 8);
-        System.out.println("Current Card_Id: " + cardidbytes[0] + cardidbytes[1] );
-        // =================== LOAD (master,MASTER) ===========================
-        ECPublicKey publicKey = loadPublicKeyFromFile("public.key");
-        ECPrivateKey privateKey = loadPrivateKeyFromFile("private.key");
-        // Get public key point W
-        ECPoint W = publicKey.getW();
-        BigInteger Wx = W.getAffineX();
-        BigInteger Wy = W.getAffineY();
-        byte[] Wxba = toUnsignedByteArray(Wx);
-        byte[] Wyba = toUnsignedByteArray(Wy);
-        // Handle the case when Wxba and Wyba are less than 24 bytes
-        byte[] Wtosend = new byte[1 + Wxba.length + Wyba.length];
-        // add the 0x04 byte -> encoding for uncompressed coords
-        Wtosend[0] = (byte) 4;
-        //put the x and y in Wtosend
-        System.arraycopy(Wxba, 0, Wtosend, 1, Wxba.length);
-        System.arraycopy(Wyba, 0, Wtosend, 1 + Wxba.length, Wyba.length);
-        // ===========================================================================
-
-        // =================== SIGN card public key with (master) ===========================
-        // Message to be signed
-// Message to be signed
-        byte[] message = new byte[cardPublicKeybytes.length + cardidbytes.length];
-
-        System.arraycopy(cardPublicKeybytes, 0, message, 0, cardPublicKeybytes.length);
-        System.arraycopy(cardidbytes, 0, message, cardPublicKeybytes.length, cardidbytes.length);
-
-        System.out.println("pubkey and id: " + Arrays.toString(message));
-
-
-        // Sign the message
-        Signature signature = Signature.getInstance("SHA1withECDSA", "BC");
-        signature.initSign(privateKey, new SecureRandom());
-        signature.update(message);
-        byte[] sigBytes = signature.sign();
-
-        //putting everything together in buffer to send
-        byte[] combined = new byte[Wtosend.length + sigBytes.length + cardidbytes.length];
-        System.arraycopy(Wtosend, 0, combined, 0, Wtosend.length);
-        System.arraycopy(sigBytes, 0, combined, Wtosend.length, sigBytes.length);
-        System.arraycopy(cardidbytes, 0, combined, Wtosend.length + sigBytes.length, cardidbytes.length);
-        System.out.println(toHexString(cardidbytes));
-        CommandAPDU apdu = new CommandAPDU(0,PersonalizationTerminal_MSG2,0,0,combined);
-
-
-//        BYTE LC LENGTH OF COMMAND DATA WILL BE AUTOMATICALLY DETERMINED SO AFTER P1 P2 JUST GIVE DATA BYTE ARRAY
-//        MAXIMUM BYTES DATA CAN FIT IS 255 BYTES.
-
-        try {
-            ResponseAPDU response = applet.transmit(apdu);
-            byte[] responsedata = response.getData();
-            System.out.println("Raw content of the command: " + toHexString(apdu.getBytes()));
-            System.out.println("Raw content of the response: " + toHexString(response.getBytes()));
-
-            return null;
-        }
-        catch (CardException e){
-            return null;
-        }
-    }//end sendPersonalizationMSG2
-
-
-
-
-    public static void main(String[] arg) throws Exception {
-        System.out.println("Main of test Terminal is running");
-        personalizationTerminal personalization_terminal = new personalizationTerminal();
-
-        try {
-            Thread.sleep(1000);
-        } catch (Exception e) {
-            System.err.println("waiting failed?");
-        }
-        byte[] cardPublicKeybytes = personalization_terminal.sendPersonalizationMSG1();
-        personalization_terminal.sendPersonalizationMSG2(cardPublicKeybytes);
-//        System.out.println("Received card public key: " + toHexString(cardPublicKeybytes));
-
-
-//        personalization_terminal.sendPersonalizationMSG2();
-        System.out.println("Card inserted applet selected");
-
-
-
-
-    }
-    public static String toHexString(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b: bytes) {
-            sb.append(String.format("%02X ", b));
-        }
-        return sb.toString();
-    }
-
-
-
-    // Convert BigInteger to unsigned byte array of given size
-    private static byte[] toUnsignedByteArray(BigInteger bi, int size) {
-        byte[] bytes = bi.toByteArray();
-        if (bytes.length == size) {
-            return bytes;
-        } else if (bytes.length == size + 1 && bytes[0] == 0) {
-            return Arrays.copyOfRange(bytes, 1, size + 1);
-        } else {
-            byte[] result = new byte[size];
-            System.arraycopy(bytes, 0, result, size - bytes.length, bytes.length);
-            return result;
-        }
-    }
-    public static byte[] toUnsignedByteArray(BigInteger value) {
-        byte[] originalByteArray = value.toByteArray();
-        if (originalByteArray[0] == 0) {
-            byte[] unsignedByteArray = new byte[originalByteArray.length - 1];
-            System.arraycopy(originalByteArray, 1, unsignedByteArray, 0, unsignedByteArray.length);
-            return unsignedByteArray;
-        } else {
-            return originalByteArray;
-        }
-    }
-
 
 }
 
