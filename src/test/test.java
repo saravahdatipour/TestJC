@@ -9,10 +9,13 @@ import javacard.security.*;
 public class test extends Applet implements ISO7816 {
 
     private static ECPublicKey publicKey;
+    private static ECPublicKey MasterpublicKey;
+
     private static ECPrivateKey privateKey;
 
     private static short cardid;
     private static byte[] cardidbytes = new byte[2];
+    private static byte STATE;
 
 
     private final static byte HELLOMSG = (byte) 0; // TEST MESSAGE 1
@@ -105,7 +108,7 @@ public class test extends Applet implements ISO7816 {
         short dataLength = apdu.setIncomingAndReceive();
         KeyPair keypair = new KeyPair(KeyPair.ALG_EC_FP, KeyBuilder.LENGTH_EC_FP_192);
         keypair.genKeyPair();
-        ECPublicKey MasterpublicKey = (ECPublicKey) keypair.getPublic();
+        MasterpublicKey = (ECPublicKey) keypair.getPublic();
         MasterpublicKey.setW(buffer, ISO7816.OFFSET_CDATA, (short) 49);
 
         // set length and offset of the signature
@@ -130,9 +133,15 @@ public class test extends Applet implements ISO7816 {
         if (!IsVerified) {
             ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
         }
-        // Send test message
-        buffer[ISO7816.OFFSET_CDATA] = cardidbytes[0];
-        buffer[ISO7816.OFFSET_CDATA+1] = cardidbytes[1];
+
+        //set state
+
+        STATE = (byte) 0x01;
+
+
+
+        buffer[ISO7816.OFFSET_CDATA] = (byte) 0x4F;
+        buffer[ISO7816.OFFSET_CDATA+1] = (byte) 0x4B; //ASCII for OK
 
         apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (short)2);
 
